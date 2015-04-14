@@ -1,3 +1,6 @@
+import os
+import binascii
+
 __author__ = 'jadeszek'
 
 B_SIZE = 64  # block size
@@ -154,27 +157,30 @@ def right_shift(block, step):
 
 def generate_keys(base_key):  # key in byte form
     KP = apply_permutation(base_key, PC[0])
-    #print "K_PC1", log(permuted, 6)
+    # # print "K_PC1", log(permuted, 6)
     C, D = split_block(KP)
     keys = []
     for i in range(16):
         shift = KEY_SHIFT[i]
         C = left_shift(C, shift)
         D = left_shift(D, shift)
-       # print "C", i+1, log(C, 6)
-       # print "D", i+1, log(D, 6)
+        # # print "C", i+1, log(C, 6)
+        # # print "D", i+1, log(D, 6)
         CD = unite(C, D)
-        print "CD[%s]: " % str(i+1), log(CD, 7)
+        # print "CD[%s]: " % str(i + 1), log(CD, 7)
         K = apply_permutation(CD, PC[1])
-        print "KS[%s]: " % str(i+1), log(K, 6)
+        # print "KS[%s]: " % str(i + 1), log(K, 6)
         keys.append(K)
     return keys
+
 
 def dec2bin(decimal, width=4):
     return [int(d) for d in bin(decimal)[2:].zfill(width)]
 
 
 def bin2dec(bin_list):
+    # print ">>", reduce(lambda x, y: str(x) + str(y), bin_list)
+    # print ">>", int(reduce(lambda x, y: str(x) + str(y), bin_list), 2)
     return int(reduce(lambda x, y: str(x) + str(y), bin_list), 2)
 
 
@@ -182,14 +188,14 @@ def get_sbox_coordinates(six_byte_chunk):
     row_bin = [six_byte_chunk[0]] + [six_byte_chunk[-1]]
     column_bin = six_byte_chunk[1:-1]
 
-  #  print(row_bin, column_bin)
+    # # print(row_bin, column_bin)
     return bin2dec(row_bin), bin2dec(column_bin)
 
 
 def apply_sbox(chunk, sbox):
     row, col = get_sbox_coordinates(chunk)
     number = sbox[row * 16 + col]
-   # print "(", row, ",", col, ") ->", number
+    # # print "(", row, ",", col, ") ->", number
     return dec2bin(number)
 
 
@@ -202,19 +208,19 @@ def unite(left_block, right_block):
 
 
 def f(right_block, key, iter):
-    print "\n >>> round", iter+1, "\n"
+    # print "\n >>> round", iter + 1, "\n"
     permuted = apply_permutation(right_block, E)
-    print "E", len(permuted), log(permuted, 6)
+    # print "E", len(permuted), log(permuted, 6)
 
-    print "KS", iter+1, len(key), log(key, 6)
+    # print "KS", iter + 1, len(key), log(key, 6)
     assert len(permuted) == len(key)
     xored = xor(permuted, key)
-    print "E ^ KS", len(xored), log(xored, 6)
+    # print "E ^ KS", len(xored), log(xored, 6)
     six_byte_chunks = [xored[i:i + 6] for i in range(0, len(xored), 6)]
-  #  print "six_byte_chunks ", log(six_byte_chunks)
+    # # print "six_byte_chunks ", log(six_byte_chunks)
     sbox_out = [apply_sbox(chunk, sbox) for chunk, sbox in zip(six_byte_chunks, S)]
     sbox_out = reduce(lambda c1, c2: c1 + c2, sbox_out)
-    print "Sbox", len(sbox_out), log(sbox_out, 4)
+    # print "Sbox", len(sbox_out), log(sbox_out, 4)
 
     return apply_permutation(sbox_out, P)
 
@@ -227,7 +233,12 @@ def string2bin(text):
 
 
 def bin2hex(bin_list):
-    return hex(bin2dec(bin_list))[:-1]  # without L
+    result = hex(bin2dec(bin_list))
+    # print ">>", result
+    if result[-1] == 'L':
+        result = result[:-1]  # without L
+    result = "0x"+result[2:].zfill(16)
+    return result
 
 
 def final(byte_block):
@@ -256,51 +267,120 @@ key = [1, 1, 1, 1, 0, 1, 1, 0,
 
 
 def encode_des(block, key):
-    print "block", len(block), log(block)
-    print "key", len(key), log(key)
+    # print "block", len(block), log(block)
+    # print "key", len(key), log(key)
     keys = generate_keys(key)
-    return bin2hex(DES(block, keys))
+    des = DES(block, keys)
+    res = bin2hex(des)
+    # print "DEBUG: "
+    # print log(des, 8)
+    # print res
+    return res
 
 
 def decode_des(block, key):
-    print "block", len(block), log(block)
-    print "key", len(key), log(key)
+    # print "block", len(block), log(block)
+    # print "key", len(key), log(key)
     keys = generate_keys(key)[::-1]
     return bin2hex(DES(block, keys))
 
 
 def DES(block, keys):
     permuted = init(block)
-    print "permuted", len(permuted), log(permuted)
+    # print "permuted", len(permuted), log(permuted)
     L, R = split_block(permuted)
-    print "L", 0, len(L), log(L)
-    print "R", 0, len(R), log(R)
+    # print "L", 0, len(L), log(L)
+    # print "R", 0, len(R), log(R)
     for i in range(16):
         Rf = f(R, keys[i], i)
-        print "Rf", i+1, log(Rf)
+        # print "Rf", i + 1, log(Rf)
         L, R = R, xor(Rf, L)
-        print "L", i+1, len(L), log(L)
-        print "R", i+1, len(R), log(R)
+        # print "L", i + 1, len(L), log(L)
+        # print "R", i + 1, len(R), log(R)
     united = unite(R, L)
-    print "united", len(united), log(united)
+    # print "united", len(united), log(united)
     result = final(united)
-    print "result", len(result), log(result)
+    # print "result", len(result), log(result)
     return result
+
+
+def read_in_blocks(file):
+    while True:
+        block = file.read(8)
+        if block:
+            yield binascii.hexlify(block)
+        else:
+            return
+
+
+def encode_file(file, key):
+    size = os.path.getsize(file)
+    input = open(file, 'rb')
+    output = open(file + '.out', 'wb')
+    should_be_padded = (size % 8 != 0)
+
+    for block in read_in_blocks(input):
+
+        # if should_be_padded:
+        #     rest = len(block) % 8
+        #     e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
+        #
+        # else:
+        #     e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
+        #
+        e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
+
+        # print e[2:], e
+        output.write(binascii.a2b_hex(e[2:]))
+
+    input.close()
+    output.close()
+
+
+def decode_file(file, key):
+    size = os.path.getsize(file)
+    input = open(file, 'rb')
+    output = open(file + '.out', 'wb')
+    # print size, size % 8
+
+    for block in read_in_blocks(input):
+        # print block,
+        e = decode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
+        # print e[2:], e
+        output.write(binascii.a2b_hex(e[2:]))
+
+    input.close()
+    output.close()
+
+
+k = 0x1234567887654321
+
+
+
+#encode_file("input", k)
+#decode_file("input.out", k)
+
+#encode_file("test1.bin", k)
+decode_file("test1.bin.out", k)
 
 
 # DES(test, key)
 
 
-t = 0xBABC1AD1AD1A0000 # 0xaa39b9777efc3c14
-k = 0x1234567887654321 # 0x3b3898371520f75e
+#t = 0xBABC1AD1AD1A0000 # 0xaa39b9777efc3c14
 
-e = encode_des(dec2bin(t, 64), dec2bin(k, 64))
-d = decode_des(dec2bin(int(e, 16), 64), dec2bin(k, 64))
+#
+# t = 0x6475706164757061 # 0xaa39b9777efc3c14
+# k = 0x1234567887654321 # 0x3b3898371520f75e
+#
+# e = encode_des(dec2bin(t, 64), dec2bin(k, 64))
+# d = decode_des(dec2bin(int(e, 16), 64), dec2bin(k, 64))
+#
+# # print k
+# # print hex(t)
+# # print e
+# # print d
 
-print k
-print hex(t)
-print e
-print d
 
 
 
