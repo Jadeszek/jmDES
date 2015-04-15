@@ -214,7 +214,7 @@ def f(right_block, key, iter):
     # print "E", len(permuted), log(permuted, 6)
 
     # print "KS", iter + 1, len(key), log(key, 6)
-    assert len(permuted) == len(key)
+    # assert len(permuted) == len(key)
     xored = xor(permuted, key)
     # print "E ^ KS", len(xored), log(xored, 6)
     six_byte_chunks = [xored[i:i + 6] for i in range(0, len(xored), 6)]
@@ -316,11 +316,11 @@ def read_in_blocks(file):
     while True:
         block = file.read(8)
         if block:
-            print "p", block,
+            # print "p", block,
             if len(block) < 8:
                 block = padd(block)
-                print "x",
-            print block
+                # print "x",
+            # print block
             yield binascii.hexlify(block)
         else:
             return
@@ -331,31 +331,30 @@ def trunc(file):
     file.seek(-BYTES, os.SEEK_END)
     block = file.read(BYTES)
     h = binascii.hexlify(block)
-    print h
-    print h[::-1]
+    # print h
+    # print h[::-1]
     trunc_counter = 0
     for b in h[::-1]:
         if b == "1":
             break
         trunc_counter += 1
 
-    if trunc_counter == 0: # no trailing zeros
-        return
+    if trunc_counter == 0:  # no trailing zeros
+        return file
 
-    print "tc:", trunc_counter
+    # print "tc:", trunc_counter
     if h[::-1][trunc_counter] == "1":
-        print "ciach"
-        file.seek(-(trunc_counter+1)/2, os.SEEK_END) #some magic here, should be fixed later, but deadline is tomorrow
+        # print "ciach"
+        file.seek(-(trunc_counter + 1) / 2,
+                  os.SEEK_END)  # some magic here, should be fixed later, but deadline is tomorrow
         file.truncate()
     return file
 
 
 def get_fake_block():
+    print binascii.hexlify("\x10" + "\x00" * 7)
     return binascii.hexlify("\x10" + "\x00" * 7)
 
-
-
-# file.truncate()
 
 def des_file(file, key, encode=True):
     size = os.path.getsize(file)
@@ -363,22 +362,26 @@ def des_file(file, key, encode=True):
     output = open(file + '.out', 'w+b')
     should_be_padded = (size % 8 != 0)
 
-    n = size / 8
+    proc = 0
     i = 0
 
     for block in read_in_blocks(input):
-        print ":", block, "->",
+        # print ":", block, "->",
         if encode:
-            e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
+            e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))[2:]
         else:
-            e = decode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
-        print binascii.unhexlify(e[2:])
-        output.write(binascii.unhexlify(e[2:]))
-        sys.stderr.write(str(i) + "/" + str(n) + "\n")
-        i += 1
+            e = decode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))[2:]
+        # print binascii.unhexlify(e[2:])
+        output.write(binascii.unhexlify(e))
+        new_proc = int(100 * (1.0 * i / size))
+        if proc != new_proc:
+            proc = new_proc
+            sys.stderr.write(str(proc) + "% \n")
+        i += 8
 
     if encode and not should_be_padded:
-        output.write(encode_des(dec2bin(int(get_fake_block(), 16), 64), dec2bin(key, 64)))
+        e = encode_des(dec2bin(int(get_fake_block(), 16), 64), dec2bin(key, 64))[2:]
+        output.write(binascii.unhexlify(e))
 
     if not encode:
         output = trunc(output)
@@ -386,18 +389,31 @@ def des_file(file, key, encode=True):
     input.close()
     output.close()
 
+    sys.stderr.write(str(100) + "% \n")
+
 
 k = 0x1234567887654321
 
 # des_file("input", k)
 # des_file("input.out", k, False)
 
-file = "input"
-if len(sys.argv) > 1:
-    file = sys.argv[1]
 
-des_file(file, k)
-des_file(file+".out", k, False)
+if len(sys.argv) == 1:
+    file = "input"
+    sys.stderr.write("Encode " + file + "\n")
+    des_file(file, k)
+    sys.stderr.write("Decode " + file + "\n")
+    des_file(file + ".out", k, False)
+else:
+    for file in sys.argv[1:]:
+        sys.stderr.write("Encode " + file + "\n")
+        des_file(file, k)
+        sys.stderr.write("Decode " + file + "\n")
+        des_file(file + ".out", k, False)
+
+
+
+
 
 
 # DES(test, key)
