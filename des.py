@@ -305,43 +305,99 @@ def DES(block, keys):
     return result
 
 
+def padd(block):
+    size = len(block)
+    block += "\x10"
+    block += (8 - size - 1) * "\x00"
+    return block
+
+
 def read_in_blocks(file):
     while True:
         block = file.read(8)
         if block:
+            print "p", block,
+            if len(block) < 8:
+                block = padd(block)
+                print "x",
+            print block
             yield binascii.hexlify(block)
         else:
             return
 
 
+def trunc(file):
+    BYTES = 8
+    file.seek(-BYTES, os.SEEK_END)
+    block = file.read(BYTES)
+    h = binascii.hexlify(block)
+    print h
+    print h[::-1]
+    trunc_counter = 0
+    for b in h[::-1]:
+        if b == "1":
+            break
+        trunc_counter += 1
+
+    if trunc_counter == 0: # no trailing zeros
+        return
+
+    print "tc:", trunc_counter
+    if h[::-1][trunc_counter] == "1":
+        print "ciach"
+        file.seek(-(trunc_counter+1)/2, os.SEEK_END) #some magic here, should be fixed later, but deadline is tomorrow
+        file.truncate()
+    return file
+
+
+def get_fake_block():
+    return binascii.hexlify("\x10" + "\x00" * 7)
+
+
+
+# file.truncate()
+
 def des_file(file, key, encode=True):
     size = os.path.getsize(file)
     input = open(file, 'rb')
-    output = open(file + '.out', 'wb')
+    output = open(file + '.out', 'w+b')
     should_be_padded = (size % 8 != 0)
 
     n = size / 8
     i = 0
 
     for block in read_in_blocks(input):
+        print ":", block, "->",
         if encode:
             e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
         else:
             e = decode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
-        output.write(binascii.a2b_hex(e[2:]))
+        print binascii.unhexlify(e[2:])
+        output.write(binascii.unhexlify(e[2:]))
         sys.stderr.write(str(i) + "/" + str(n) + "\n")
         i += 1
+
+    if encode and not should_be_padded:
+        output.write(encode_des(dec2bin(int(get_fake_block(), 16), 64), dec2bin(key, 64)))
+
+    if not encode:
+        output = trunc(output)
+
     input.close()
     output.close()
 
 
 k = 0x1234567887654321
 
-des_file("input", k)
-des_file("input.out", k, False)
-#
-# des_file("test1.bin", k)
-# des_file("test1.bin.out", k, False)
+# des_file("input", k)
+# des_file("input.out", k, False)
+
+file = "input"
+if len(sys.argv) > 1:
+    file = sys.argv[1]
+
+des_file(file, k)
+des_file(file+".out", k, False)
 
 
 # DES(test, key)
