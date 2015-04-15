@@ -392,7 +392,7 @@ def des_file(file, key, encode=True):
     sys.stderr.write(str(100) + "% \n")
 
 
-k = 0x1234567887654321
+k = 0x1234564887654321
 
 # des_file("input", k)
 # des_file("input.out", k, False)
