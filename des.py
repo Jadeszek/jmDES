@@ -1,5 +1,6 @@
 import os
 import binascii
+import sys
 
 __author__ = 'jadeszek'
 
@@ -237,7 +238,7 @@ def bin2hex(bin_list):
     # print ">>", result
     if result[-1] == 'L':
         result = result[:-1]  # without L
-    result = "0x"+result[2:].zfill(16)
+    result = "0x" + result[2:].zfill(16)
     return result
 
 
@@ -313,73 +314,52 @@ def read_in_blocks(file):
             return
 
 
-def encode_file(file, key):
+def des_file(file, key, encode=True):
     size = os.path.getsize(file)
     input = open(file, 'rb')
     output = open(file + '.out', 'wb')
     should_be_padded = (size % 8 != 0)
 
-    for block in read_in_blocks(input):
-
-        # if should_be_padded:
-        #     rest = len(block) % 8
-        #     e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
-        #
-        # else:
-        #     e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
-        #
-        e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
-
-        # print e[2:], e
-        output.write(binascii.a2b_hex(e[2:]))
-
-    input.close()
-    output.close()
-
-
-def decode_file(file, key):
-    size = os.path.getsize(file)
-    input = open(file, 'rb')
-    output = open(file + '.out', 'wb')
-    # print size, size % 8
+    n = size / 8
+    i = 0
 
     for block in read_in_blocks(input):
-        # print block,
-        e = decode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
-        # print e[2:], e
+        if encode:
+            e = encode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
+        else:
+            e = decode_des(dec2bin(int(block, 16), 64), dec2bin(key, 64))
         output.write(binascii.a2b_hex(e[2:]))
-
+        sys.stderr.write(str(i) + "/" + str(n) + "\n")
+        i += 1
     input.close()
     output.close()
 
 
 k = 0x1234567887654321
 
-
-
-#encode_file("input", k)
-#decode_file("input.out", k)
-
-#encode_file("test1.bin", k)
-decode_file("test1.bin.out", k)
+des_file("input", k)
+des_file("input.out", k, False)
+#
+# des_file("test1.bin", k)
+# des_file("test1.bin.out", k, False)
 
 
 # DES(test, key)
 
 
-#t = 0xBABC1AD1AD1A0000 # 0xaa39b9777efc3c14
+# t = 0xBABC1AD1AD1A0000 # 0xaa39b9777efc3c14
 
-#
+
 # t = 0x6475706164757061 # 0xaa39b9777efc3c14
 # k = 0x1234567887654321 # 0x3b3898371520f75e
 #
 # e = encode_des(dec2bin(t, 64), dec2bin(k, 64))
 # d = decode_des(dec2bin(int(e, 16), 64), dec2bin(k, 64))
 #
-# # print k
-# # print hex(t)
-# # print e
-# # print d
+# print k
+# print hex(t)
+# print e
+# print d
 
 
 
