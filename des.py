@@ -208,22 +208,7 @@ def unite(left_block, right_block):
     return left_block + right_block
 
 
-def f(right_block, key, iter):
-    # print "\n >>> round", iter + 1, "\n"
-    permuted = apply_permutation(right_block, E)
-    # print "E", len(permuted), log(permuted, 6)
 
-    # print "KS", iter + 1, len(key), log(key, 6)
-    # assert len(permuted) == len(key)
-    xored = xor(permuted, key)
-    # print "E ^ KS", len(xored), log(xored, 6)
-    six_byte_chunks = [xored[i:i + 6] for i in range(0, len(xored), 6)]
-    # # print "six_byte_chunks ", log(six_byte_chunks)
-    sbox_out = [apply_sbox(chunk, sbox) for chunk, sbox in zip(six_byte_chunks, S)]
-    sbox_out = reduce(lambda c1, c2: c1 + c2, sbox_out)
-    # print "Sbox", len(sbox_out), log(sbox_out, 4)
-
-    return apply_permutation(sbox_out, P)
 
 
 def string2bin(text):
@@ -285,6 +270,23 @@ def decode_des(block, key):
     keys = generate_keys(key)[::-1]
     return bin2hex(DES(block, keys))
 
+
+def f(right_block, key, iter):
+    # print "\n >>> round", iter + 1, "\n"
+    permuted = apply_permutation(right_block, E)
+    # print "E", len(permuted), log(permuted, 6)
+
+    # print "KS", iter + 1, len(key), log(key, 6)
+    # assert len(permuted) == len(key)
+    xored = xor(permuted, key)
+    # print "E ^ KS", len(xored), log(xored, 6)
+    six_byte_chunks = [xored[i:i + 6] for i in range(0, len(xored), 6)]
+    # # print "six_byte_chunks ", log(six_byte_chunks)
+    sbox_out = [apply_sbox(chunk, sbox) for chunk, sbox in zip(six_byte_chunks, S)]
+    sbox_out = reduce(lambda c1, c2: c1 + c2, sbox_out)
+    # print "Sbox", len(sbox_out), log(sbox_out, 4)
+
+    return apply_permutation(sbox_out, P)
 
 def DES(block, keys):
     permuted = init(block)
@@ -392,27 +394,27 @@ def des_file(file, key, encode=True):
     sys.stderr.write(str(100) + "% \n")
 
 
-k = 0x1234564887654321
+k = 0x3b3898371520f75e
 
-# des_file("input", k)
-# des_file("input.out", k, False)
+des_file("input", k)
+des_file("input.out", k, False)
 
-
-if len(sys.argv) == 1:
-    file = "input"
-    sys.stderr.write("Encode " + file + "\n")
-    des_file(file, k)
-    sys.stderr.write("Decode " + file + "\n")
-    des_file(file + ".out", k, False)
-else:
-    for file in sys.argv[1:]:
-        sys.stderr.write("Encode " + file + "\n")
-        des_file(file, k)
-        sys.stderr.write("Decode " + file + "\n")
-        des_file(file + ".out", k, False)
-
-
-
+#
+# if len(sys.argv) == 1:
+#     file = "input"
+#     sys.stderr.write("Encode " + file + "\n")
+#     des_file(file, k)
+#     sys.stderr.write("Decode " + file + "\n")
+#     des_file(file + ".out", k, False)
+# else:
+#     for file in sys.argv[1:]:
+#         #sys.stderr.write("Encode " + file + "\n")
+#         #des_file(file, k)
+#         sys.stderr.write("Decode " + file + "\n")
+#         des_file(file, k, False)
+#
+#
+#
 
 
 
