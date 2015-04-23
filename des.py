@@ -394,47 +394,21 @@ def des_file(file, key, encode=True):
     sys.stderr.write(str(100) + "% \n")
 
 
-k = 0x3b3898371520f75e
-
-des_file("input", k)
-des_file("input.out", k, False)
-
-#
-# if len(sys.argv) == 1:
-#     file = "input"
-#     sys.stderr.write("Encode " + file + "\n")
-#     des_file(file, k)
-#     sys.stderr.write("Decode " + file + "\n")
-#     des_file(file + ".out", k, False)
-# else:
-#     for file in sys.argv[1:]:
-#         #sys.stderr.write("Encode " + file + "\n")
-#         #des_file(file, k)
-#         sys.stderr.write("Decode " + file + "\n")
-#         des_file(file, k, False)
-#
-#
-#
+if __name__=="__main__":
 
 
+	k = 0x3b3898371520f75e
 
-# DES(test, key)
+	if len(sys.argv) == 1:
+		files = ["input"]
+	else:
+		files = sys.argv[1:]
 
-
-# t = 0xBABC1AD1AD1A0000 # 0xaa39b9777efc3c14
-
-
-# t = 0x6475706164757061 # 0xaa39b9777efc3c14
-# k = 0x1234567887654321 # 0x3b3898371520f75e
-#
-# e = encode_des(dec2bin(t, 64), dec2bin(k, 64))
-# d = decode_des(dec2bin(int(e, 16), 64), dec2bin(k, 64))
-#
-# print k
-# print hex(t)
-# print e
-# print d
-
+	for file in files:
+		sys.stderr.write("Encode " + file + "\n")
+		des_file(file, k)
+		sys.stderr.write("Decode " + file + "\n")
+		des_file(file + ".out", k, False)
 
 
 
